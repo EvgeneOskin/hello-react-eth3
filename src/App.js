@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import pify from 'pify';
 import logo from './logo.svg';
 import './App.css';
 
@@ -125,7 +126,7 @@ class App extends Component {
     ]);
 
     this.state = {
-      ContractInstance: MyContract.at('0xcd1cce5e215f20e4b99a80c8d2dc24d027c12cfc'),
+      ContractInstance: pify(MyContract.at('0xcd1cce5e215f20e4b99a80c8d2dc24d027c12cfc'), { exclude: ['ExperimentComplete']}),
       contractState: '',
     }
     this.state.event = this.state.ContractInstance.ExperimentComplete()
@@ -135,50 +136,49 @@ class App extends Component {
       console.log('This is an experiment result:::', event.args.result)
     })
   }
-  queryState = () => {
+  queryState = async () => {
     const { getState } = this.state.ContractInstance;
 
-    getState((err, secret) => {
-      if (err) { console.error('An error occured:::', err) }
-      console.log('This contract state:::', secret)
-    })
+    try {
+      const state = await getState()
+      console.log('This contract state:::', state)
+    } catch(err) {
+      console.error('An error occured:::', err)
+    }
   }
-  updateState = (event) => {
+  updateState = async (event) => {
     event.preventDefault();
 
     const { setState } = this.state.ContractInstance;
     const { contractState: newState } = this.state;
 
     console.log('Try to change state');
-    setState(
+    const value = await setState(
       newState,
       {
         gas: 300000,
         from: window.web3.eth.accounts[0],
         value: window.web3.toWei(0.01, 'ether'),
-      }, (err, value) => {
-        console.log('Contract state is changing');
       }
     )
+    console.log('Contract state is changing: ', value);
   }
 
-  startExperiment = () => {
+  startExperiment = async () => {
     const { startExperiment } = this.state.ContractInstance;
 
-    startExperiment({
+    await startExperiment({
       gas: 300000,
       from: window.web3.eth.accounts[0],
       value: window.web3.toWei(0.01, 'ether'),
-    }, (err, result) => {
-      console.log('Experiment started')
     })
+    console.log('Experiment started')
   }
-  queryPseudoRandom = () => {
+  queryPseudoRandom = async () => {
     const { pseudoRandomResult } = this.state.ContractInstance;
 
-    pseudoRandomResult((err, result) => {
-      console.log('Pseudo random result::::', result);
-    })
+    const result = await pseudoRandomResult()
+    console.log('Pseudo random result::::', result);
   }
   render() {
     return (
