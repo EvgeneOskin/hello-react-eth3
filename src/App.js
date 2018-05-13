@@ -7,6 +7,18 @@ class App extends Component {
     super(props)
     const MyContract = window.web3.eth.contract([
       {
+        "anonymous": false,
+        "inputs": [
+          {
+            "indexed": false,
+            "name": "result",
+            "type": "bool"
+          }
+        ],
+        "name": "ExperimentComplete",
+        "type": "event"
+      },
+      {
         "constant": false,
         "inputs": [],
         "name": "kill",
@@ -25,6 +37,20 @@ class App extends Component {
         ],
         "name": "setState",
         "outputs": [],
+        "payable": true,
+        "stateMutability": "payable",
+        "type": "function"
+      },
+      {
+        "constant": false,
+        "inputs": [],
+        "name": "startExperiment",
+        "outputs": [
+          {
+            "name": "",
+            "type": "bool"
+          }
+        ],
         "payable": true,
         "stateMutability": "payable",
         "type": "function"
@@ -71,6 +97,20 @@ class App extends Component {
       {
         "constant": true,
         "inputs": [],
+        "name": "pseudoRandomResult",
+        "outputs": [
+          {
+            "name": "",
+            "type": "bool"
+          }
+        ],
+        "payable": false,
+        "stateMutability": "view",
+        "type": "function"
+      },
+      {
+        "constant": true,
+        "inputs": [],
         "name": "you_awesome",
         "outputs": [
           {
@@ -85,9 +125,15 @@ class App extends Component {
     ]);
 
     this.state = {
-      ContractInstance: MyContract.at('0x2331afc38b623a422d30efbfda4fa1079f606e43'),
+      ContractInstance: MyContract.at('0xcd1cce5e215f20e4b99a80c8d2dc24d027c12cfc'),
       contractState: '',
     }
+    this.state.event = this.state.ContractInstance.ExperimentComplete()
+    this.state.event.watch((err, event) =>{
+      if (err) console.error('An error occured:::', err)
+      console.log('This is an event:::', event)
+      console.log('This is an experiment result:::', event.args.result)
+    })
   }
   queryState = () => {
     const { getState } = this.state.ContractInstance;
@@ -115,6 +161,25 @@ class App extends Component {
       }
     )
   }
+
+  startExperiment = () => {
+    const { startExperiment } = this.state.ContractInstance;
+
+    startExperiment({
+      gas: 300000,
+      from: window.web3.eth.accounts[0],
+      value: window.web3.toWei(0.01, 'ether'),
+    }, (err, result) => {
+      console.log('Experiment started')
+    })
+  }
+  queryPseudoRandom = () => {
+    const { pseudoRandomResult } = this.state.ContractInstance;
+
+    pseudoRandomResult((err, result) => {
+      console.log('Pseudo random result::::', result);
+    })
+  }
   render() {
     return (
       <div className="App">
@@ -139,6 +204,13 @@ class App extends Component {
           />
           <button type="submit">Submit</button>
         </form>
+        <br />
+        <br />
+        <button onClick={this.startExperiment}>Start Experiment</button>
+        <br />
+        <br />
+        <br />
+        <button onClick={this.queryPseudoRandom}>Query Pseudo Random</button>
         <br />
         <br />
 
